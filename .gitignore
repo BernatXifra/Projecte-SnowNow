@@ -1,0 +1,17 @@
+# Dependències
+node_modules/
+package-lock.json
+
+# Variables d'entorn i claus secretes
+.env
+.env*.local
+
+# Expo i builds mòbils
+.expo/
+dist/
+web-build/
+
+# Logs del sistema
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
