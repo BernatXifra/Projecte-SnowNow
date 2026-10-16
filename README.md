@@ -98,6 +98,15 @@ SnowNow/
 
 ---
 
+## 🗃️ 7. Model de Dades (Col·leccions)
+
+- **`slopes_and_lifts`**: Estat d'obertura, dificultat i cues en pistes (utilitza *Change Streams*).
+- **`resorts`**: Característiques de l'estació, serveis i metres esquiables (índexs de cerca i agregacions).
+- **`skier_sessions`**: Telemetria, velocitats i punts GPS en format GeoJSON (*índex 2dsphere*).
+- **`rental_inventory`**: Catàleg de material heterogeni (esquís, cascs, botes) amb atributs flexibles (*Schema-Free*).
+
+---
+
 ## ⚙️ 8. Guia d'Instal·lació i Execució
 
 ### Requisits Previs
