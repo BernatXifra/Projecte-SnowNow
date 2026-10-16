@@ -98,72 +98,6 @@ SnowNow/
 
 ---
 
-## 📊 7. Esquemes JSON de les Col·leccions
-
-### Col·lecció 1: `slopes_and_lifts` (Mòdul 1)
-```json
-{
-  "_id": "pista_aliga_01",
-  "name": "Àliga",
-  "type": "slope",
-  "difficulty": "black",
-  "status": "closed",
-  "closure_reason": "Vent fort a cota alta",
-  "snow_type": "hard_pack",
-  "last_updated": "2026-10-15T09:00:00Z"
-}
-```
-
-### Col·lecció 2: `resorts` (Mòdul 2)
-```json
-{
-  "_id": "grandvalira",
-  "name": "Grandvalira Resorts",
-  "location": {
-    "region": "Andorra",
-    "country": "AD"
-  },
-  "total_km": 210,
-  "services": ["wifi", "restaurant", "ski_school", "snowpark"],
-  "open_slopes_count": 85,
-  "snow_quality": "powder"
-}
-```
-
-### Col·lecció 3: `skier_sessions` (Mòdul 3)
-```json
-{
-  "_id": "session_user_42_20261015",
-  "user_id": "marc_42",
-  "resort_id": "grandvalira",
-  "date": "2026-10-15",
-  "current_location": {
-    "type": "Point",
-    "coordinates": [1.7333, 42.5406]
-  },
-  "max_speed_kmh": 68.4,
-  "total_distance_km": 24.2
-}
-```
-
-### Col·lecció 4: `rental_inventory` (Mòdul 4)
-```json
-{
-  "_id": "mat_9812",
-  "category": "skis",
-  "brand": "Atomic",
-  "model": "Redster S9",
-  "status": "available",
-  "attributes": {
-    "length_cm": 165,
-    "turning_radius_m": 12.5,
-    "level": "expert"
-  }
-}
-```
-
----
-
 ## ⚙️ 8. Guia d'Instal·lació i Execució
 
 ### Requisits Previs
@@ -175,7 +109,7 @@ SnowNow/
 
 ### Pas 1: Clonar el repositori
 ```bash
-git clone https://github.com/<el-teu-usuari>/SnowNow.git
+git clone https://github.com/Pujiiiii/Projecte-SnowNow.git
 cd SnowNow
 ```
 
@@ -229,28 +163,3 @@ cd SnowNow
    - **iOS (iPhone):** Obre l'aplicació nativa de la **Càmera**, enfoca el codi QR i toca la notificació groga per obrir-lo amb Expo Go.
 
 ---
-
-## 🎤 9. Estratègia de la Presentació i Demostració en Viu
-
-Estructura temporal establerta per a l'avaluació (45 minuts de presentació + 15 minuts de preguntes):
-
-1. **Part 1: Presentació de la Idea i Model de Negoci (10 min):**
-   - Contextualització del repte a les estacions d'esquí i proposta de valor de SnowNow.
-2. **Part 2: Explicació Teòrica de la Tecnologia (15 min):**
-   - Justificació de MongoDB vs bases de dades SQL relacionals.
-   - Modelat de documents JSON, funcionament d'índexs `2dsphere`, índexs de text i Change Streams.
-3. **Part 3: Demostració en Viu (20 min):**
-   - **Prova 1:** Modificació d'estat d'una pista a "Tancada per vent" i recepció immediata al mòbil via Change Streams.
-   - **Prova 2:** Cerca complexa de pistes aplicant filtres de dificultat i qualitat de la neu mitjançant agregacions.
-   - **Prova 3:** Enviament de telemetria GPS amb reordenació dinàmica del rànquing de velocitat.
-   - **Prova 4:** Registre d'un nou article de lloguer amb atributs heterogenis i reserva associada.
-4. **Torn de Preguntes (15 min):**
-   - Defensiva tècnica davant del tribunal i resposta a consultes sobre el disseny de la base de dades.
-
----
-
-## 📦 10. Entregables del Projecte
-
-- **Presentació:** Diapositives digitals d'exposició teòrica i funcional.
-- **Codi Font:** Repositori complet a GitHub amb frontend, backend i scripts de càrrega de dades inicials.
-- **Entorn de Desplegament:** Configuració Docker per a l'aixecament reproduïble dels serveis.
