@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
+import skierSessionRoutes from './routes/skierSessionRoutes.js';
+
 dotenv.config();
 
 const app = express();
@@ -11,6 +13,9 @@ const MONGO_URI = process.env.MONGO_URI || '';
 
 app.use(cors());
 app.use(express.json());
+
+// Rutes de l'API
+app.use('/api/skier-sessions', skierSessionRoutes);
 
 // Ruta de prova de salut
 app.get('/api/health', (req, res) => {
