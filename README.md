@@ -1,7 +1,7 @@
 # ❄️ SnowNow
 
 > **Plataforma mòbil integral per a estacions d'esquí**  
-> Projecte acadèmic per a l'assignatura de **Sistemes de Gestió de Bases de Dades (SGBD)**.
+> Projecte acadèmic per a l'assignatura de **Sistemes de Gestió de Bases de Dades (SGBD)**. 
 
 ---
 
