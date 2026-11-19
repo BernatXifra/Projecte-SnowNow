@@ -1,10 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IResortSlope {
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  lengthKm: number;
-}
-
 export interface IResort extends Document {
   name: string;
   country: string;
@@ -15,7 +10,6 @@ export interface IResort extends Document {
     base: number;
     summit: number;
   };
-  slopes: IResortSlope[];
   services: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -60,21 +54,6 @@ const ResortSchema = new Schema<IResort>(
         min: 0,
       },
     },
-    slopes: [
-      {
-        difficulty: {
-          type: String,
-          // Possible canvi futur: utilitzar els colors de les pistes ('green', 'blue', 'red', 'black').
-          enum: ['beginner', 'intermediate', 'advanced'],
-          required: true,
-        },
-        lengthKm: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-      },
-    ],
     services: {
       type: [String],
       default: [],

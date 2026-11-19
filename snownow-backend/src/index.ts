@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
+import resortRoutes from './routes/resortRoutes.js';
 import skierSessionRoutes from './routes/skierSessionRoutes.js';
 
 dotenv.config();
@@ -15,6 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 // Rutes de l'API
+app.use('/api/resorts', resortRoutes);
 app.use('/api/skier-sessions', skierSessionRoutes);
 
 // Ruta de prova de salut
