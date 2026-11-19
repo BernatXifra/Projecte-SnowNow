@@ -5,6 +5,7 @@ import cors from 'cors';
 
 import resortRoutes from './routes/resortRoutes.js';
 import skierSessionRoutes from './routes/skierSessionRoutes.js';
+import rentalRoutes from './routes/rentalRoutes.js';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 // Rutes de l'API
 app.use('/api/resorts', resortRoutes);
 app.use('/api/skier-sessions', skierSessionRoutes);
+app.use('/api/rentals', rentalRoutes);
 
 // Ruta de prova de salut
 app.get('/api/health', (req, res) => {
