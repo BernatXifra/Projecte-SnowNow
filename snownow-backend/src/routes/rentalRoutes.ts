@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
+import { Resort } from '../models/Resort.js';
 import type { NextFunction, Request, Response } from 'express';
 import { RentalItem, rentalMeasurements } from '../models/RentalItem.js';
 import type { RentalCategory, RentalReservation } from '../models/RentalItem.js';
 
 const router = Router();
-const catalogueFields = 'resortId name category fit attributes';
+const catalogueFields = { resortId: 1, name: 1, category: 1, fit: 1, attributes: 1 } as const;
+const resortIdPattern = /^[0-9a-f]{24}$/;
+const categoryAttributes = { skis: 'lengthCm', snowboard: 'lengthCm', boots: 'sizeEU', helmet: 'size' } as const;
 const reservationIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -14,6 +17,24 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isText(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function normalizeResortId(value: unknown): string | undefined {
+  if (!isText(value)) return;
+  const id = value.trim().toLowerCase();
+  if (resortIdPattern.test(id)) return id;
+}
+
+function readPagination(page: unknown = '1', limit: unknown = '20') {
+  const pageNumber = typeof page === 'string' ? Number(page) : NaN;
+  const pageSize = typeof limit === 'string' ? Number(limit) : NaN;
+  const offset = (pageNumber - 1) * pageSize;
+  if (
+    !Number.isSafeInteger(pageNumber) || pageNumber < 1 ||
+    !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100 ||
+    !Number.isSafeInteger(offset)
+  ) return;
+  return { pageNumber, pageSize, offset };
 }
 
 function isCategory(value: unknown): value is RentalCategory {
@@ -35,46 +56,53 @@ function parseDay(value: unknown): Date | undefined {
 }
 
 function reservationData(
-  item: { _id: unknown; resortId: string; category: RentalCategory },
+  item: {
+    _id: unknown;
+    resortId: string;
+    name: string;
+    category: RentalCategory;
+    fit: { min: number; max: number };
+    attributes: Record<string, unknown>;
+  },
   reservation: RentalReservation,
 ) {
   return {
     itemId: item._id,
     resortId: item.resortId,
     category: item.category,
+    name: item.name,
+    fit: item.fit,
+    attributes: item.attributes,
     reservation,
   };
 }
 
 function findReservation(id: string) {
   return RentalItem.findOne({ 'reservations._id': id }, {
-    resortId: 1,
-    category: 1,
+    ...catalogueFields,
     reservations: { $elemMatch: { _id: id } },
   }).lean();
 }
 
 router.get('/inventory', async (req, res) => {
-  const { resortId, category, page = '1', limit = '20' } = req.query;
-  const pageNumber = typeof page === 'string' ? Number(page) : NaN;
-  const pageSize = typeof limit === 'string' ? Number(limit) : NaN;
-  const offset = (pageNumber - 1) * pageSize;
+  const { resortId, category, page, limit } = req.query;
+  const normalizedResortId = normalizeResortId(resortId);
+  const pagination = readPagination(page, limit);
 
   if (
-    (resortId !== undefined && !isText(resortId)) ||
+    (resortId !== undefined && !normalizedResortId) ||
     (category !== undefined && !isCategory(category)) ||
-    !Number.isSafeInteger(pageNumber) || pageNumber < 1 ||
-    !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100 ||
-    !Number.isSafeInteger(offset)
+    !pagination
   ) {
     return res.status(400).json({ success: false, error: 'Revisa els filtres i la paginació.' });
   }
 
   const filter = {
-    ...(resortId !== undefined && { resortId: resortId.trim() }),
+    resortId: normalizedResortId ?? { $regex: resortIdPattern },
     ...(category !== undefined && { category }),
   };
 
+  const { pageNumber, pageSize, offset } = pagination;
   const items = await RentalItem.find(filter)
     .select(catalogueFields)
     .sort({ _id: 1 })
@@ -91,9 +119,10 @@ router.post('/inventory', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Cal enviar les dades del material.' });
   }
 
-  const { resortId, name, category, fit, attributes = {} } = body;
+  const { name, category, fit, attributes } = body;
+  const resortId = normalizeResortId(body.resortId);
   if (
-    !isText(resortId) || !isText(name) || !isCategory(category) ||
+    !resortId || !isText(name) || !isCategory(category) ||
     !isObject(fit) || !isMeasurement(fit.min) || !isMeasurement(fit.max) || fit.min > fit.max ||
     !isObject(attributes)
   ) {
@@ -101,6 +130,22 @@ router.post('/inventory', async (req, res) => {
       success: false,
       error: 'Cal indicar resortId, name, category, un rang fit vàlid i attributes com a objecte.',
     });
+  }
+
+  const categoryAttribute = categoryAttributes[category];
+  const categoryValue = attributes[categoryAttribute];
+  if (
+    !isText(attributes.brand) || !isText(attributes.model) ||
+    !(category === 'helmet' ? isText(categoryValue) : isMeasurement(categoryValue))
+  ) {
+    return res.status(400).json({
+      success: false,
+      error: `Cal indicar attributes.brand, attributes.model i attributes.${categoryAttribute}.`,
+    });
+  }
+
+  if (!(await Resort.exists({ _id: resortId }))) {
+    return res.status(404).json({ success: false, error: 'Estació no trobada.' });
   }
 
   const item = await RentalItem.create({
@@ -115,17 +160,40 @@ router.post('/inventory', async (req, res) => {
   });
 });
 
+router.get('/reservations/:skierId', async (req, res) => {
+  const skierId = req.params.skierId.trim();
+  const pagination = readPagination(req.query.page, req.query.limit);
+  if (!skierId || !pagination) {
+    return res.status(400).json({ success: false, error: 'Revisa skierId i la paginació.' });
+  }
+
+  const { pageNumber, pageSize, offset } = pagination;
+  const match = { 'reservations.skierId': skierId };
+  const reservations = await RentalItem.aggregate([
+    { $match: match },
+    { $unwind: '$reservations' },
+    { $match: match },
+    { $sort: { 'reservations.createdAt': -1, 'reservations._id': 1 } },
+    { $skip: offset },
+    { $limit: pageSize },
+    { $project: { _id: 0, itemId: '$_id', ...catalogueFields, reservation: '$reservations' } },
+  ]);
+
+  res.json({ success: true, page: pageNumber, limit: pageSize, count: reservations.length, data: reservations });
+});
+
 router.post('/reservations', async (req, res) => {
   const body: unknown = req.body;
   if (!isObject(body)) {
     return res.status(400).json({ success: false, error: 'Cal enviar les dades de la reserva.' });
   }
 
-  const { resortId, skierId, category, measurements, reservationId = randomUUID() } = body;
+  const { skierId, category, measurements, reservationId = randomUUID() } = body;
+  const resortId = normalizeResortId(body.resortId);
   const startDate = parseDay(body.startDate);
   const endDate = parseDay(body.endDate);
   if (
-    !isText(resortId) || !isText(skierId) || !isCategory(category) ||
+    !resortId || !isText(skierId) || !isCategory(category) ||
     !isReservationId(reservationId) ||
     !startDate || !endDate || startDate >= endDate
   ) {
@@ -154,7 +222,7 @@ router.post('/reservations', async (req, res) => {
   const sendExisting = (item: NonNullable<Awaited<ReturnType<typeof findReservation>>>) => {
     const existing = item.reservations[0];
     if (
-      item.resortId !== resortId.trim() || item.category !== category ||
+      item.resortId !== resortId || item.category !== category ||
       existing.skierId !== reservation.skierId || existing.measurement !== measurement ||
       existing.startDate.getTime() !== startDate.getTime() ||
       existing.endDate.getTime() !== endDate.getTime()
@@ -173,11 +241,15 @@ router.post('/reservations', async (req, res) => {
     return res.status(400).json({ success: false, error: 'La data d’inici no pot ser anterior al dia actual (UTC).' });
   }
 
+  if (!(await Resort.exists({ _id: resortId }))) {
+    return res.status(404).json({ success: false, error: 'Estació no trobada.' });
+  }
+
   try {
     // Comprovem la talla i el solapament dins la mateixa operació que crea la reserva.
     // La data de retorn és exclusiva, de manera que una altra reserva pot començar aquell dia.
     const item = await RentalItem.findOneAndUpdate({
-      resortId: resortId.trim(),
+      resortId,
       category,
       'fit.min': { $lte: measurement },
       'fit.max': { $gte: measurement },
@@ -191,7 +263,7 @@ router.post('/reservations', async (req, res) => {
       $push: { reservations: reservation },
     }, {
       sort: { _id: 1 },
-      projection: { resortId: 1, category: 1 },
+      projection: catalogueFields,
       runValidators: true,
     }).lean();
 
@@ -218,7 +290,7 @@ router.delete('/reservations/:id', async (req, res) => {
     { $set: { 'reservations.$.status': 'cancelled' } },
     {
       returnDocument: 'after',
-      projection: { resortId: 1, category: 1, reservations: { $elemMatch: { _id: id } } },
+      projection: { ...catalogueFields, reservations: { $elemMatch: { _id: id } } },
       runValidators: true,
     },
   ).lean();
