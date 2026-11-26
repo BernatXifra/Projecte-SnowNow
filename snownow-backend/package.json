@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/index.ts",
-    "seed:skier": "tsx src/scripts/seedSkierSessions.ts"
+    "seed:skier": "tsx src/scripts/seedSkierSessions.ts",
+    "seed:rental": "tsx src/scripts/seedRentalInventory.ts"
   },
   "keywords": [],
   "type": "commonjs",

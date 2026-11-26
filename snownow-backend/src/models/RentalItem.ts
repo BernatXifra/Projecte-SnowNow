@@ -67,6 +67,7 @@ const rentalItemSchema = new Schema<RentalItem>({
 });
 
 rentalItemSchema.index({ resortId: 1, category: 1, _id: 1 });
+rentalItemSchema.index({ 'reservations.skierId': 1 });
 rentalItemSchema.index({ 'reservations._id': 1 }, {
   unique: true,
   partialFilterExpression: { 'reservations._id': { $exists: true } },
